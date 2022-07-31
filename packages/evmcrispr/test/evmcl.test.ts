@@ -313,6 +313,56 @@ describe('EVM Command Line', () => {
     );
   });
 
+  it('set $var @ipfs(This should be pinned in IPFS)', async () => {
+    if (!process.env.VITE_PINATA_JWT) {
+      throw new Error('JWT not definied in environment variables.');
+    }
+    await check(
+      evmcl`
+        set $ipfs.jwt ${process.env.VITE_PINATA_JWT}
+        set $var @ipfs(This should be pinned in IPFS)
+      `,
+      [
+        evm.set('$ipfs.jwt', process.env.VITE_PINATA_JWT),
+        evm.set('$var', evm.std.helpers.ipfs('This should be pinned in IPFS')),
+      ],
+      ['$var'],
+      ['QmeA34sMpR2EZfVdPsxYk7TMLxmQxhcgNer67UyTkiwKns'],
+    );
+  });
+
+  it('set $var @calc(2+3/2)', async () => {
+    await check(
+      evmcl`
+        set $var @calc(2+3/2)
+      `,
+      [evm.set('$var', evm.std.helpers.calc('2+3/2'))],
+      ['$var'],
+      ['3'],
+    );
+  });
+
+  it('set $var @get($weth,name():(string))', async () => {
+    await check(
+      evmcl`
+          set $weth 0xdf032bc4b9dc2782bb09352007d4c57b75160b15
+          set $abi name():(string)
+          set $var @get($weth,$abi)
+      `,
+      [
+        evm.set(
+          '$var',
+          evm.std.helpers.get(
+            '0xdf032bc4b9dc2782bb09352007d4c57b75160b15',
+            'name():(string)',
+          ),
+        ),
+      ],
+      ['$var'],
+      ['Wrapped Ether'],
+    );
+  });
+
   it.skip('exec vault transfer @token(SUSHI) @me @token.balance(SUSHI,vault)', async () => {
     // FIXME
     await check(
